@@ -1,5 +1,4 @@
 require 'csv'
-#require 'fastercsv'
 require 'tempfile'
 require 'iconv'
 
@@ -23,7 +22,6 @@ class CsvFileImporterController < ApplicationController
   ISSUE_ATTRS = [:id, :subject, :assigned_to, :fixed_version,
     :author, :description, :category, :priority, :tracker, :status,
     :start_date, :due_date, :done_ratio, :estimated_hours,
-    #:parent_issue, :watchers ]
     :parent_issue, :watchers, :created_on ]
 	
   TIME_ENTRY_ATTRS = [:issue_id, :comments, :activity_id, :spent_on, :hours,
@@ -36,8 +34,7 @@ class CsvFileImporterController < ApplicationController
     # Delete existing iip to ensure there can't be two iips for a user
     CsvFileImportInProgress.delete_all(["user_id = ?",User.current.id])
     # save import-in-progress data
-    # iip = CsvFileImportInProgress.find_or_create_by_user_id(User.current.id) (pour RAILS <=3)
-	iip = CsvFileImportInProgress.find_or_create_by(user_id: User.current.id) # (pour RAILS=4)
+	iip = CsvFileImportInProgress.find_or_create_by(user_id: User.current.id) 
 	iip.import_type = params[:import_type]
     iip.quote_char = params[:wrapper]
     iip.col_sep = params[:splitter]
@@ -118,7 +115,6 @@ class CsvFileImporterController < ApplicationController
     # fields
     @attrs = Array.new
     attributes.each do |attr|
-      #@attrs.push([l_has_string?("field_#{attr}".to_sym) ? l("field_#{attr}".to_sym) : attr.to_s.humanize, attr])
       @attrs.push([l_or_humanize(attr, :prefix=>"field_"), attr])
     end
     @project.all_issue_custom_fields.each do |cfield|
@@ -148,12 +144,10 @@ class CsvFileImporterController < ApplicationController
     if unique_attr == "id"
       issues = [Issue.find_by_id(attr_value)]
     else
-      #query = Query.new(:name => "_csv_file_importer", :project => @project)
       query = IssueQuery.new(:name => "_csv_file_importer", :project => @project)
       query.add_filter("status_id", "*", [1])
       query.add_filter(unique_attr, "=", [attr_value])
 
-      #issues = Issue.find :all, :conditions => query.statement, :limit => 2, :include => [ :assigned_to, :status, :tracker, :project, :priority, :category, :fixed_version ]
       begin
         issues = Issue.find :all, :conditions => query.statement, :limit => 2, :include => [ :assigned_to, :status, :tracker, :project, :priority, :category, :fixed_version ]
       rescue NoMethodError
@@ -166,7 +160,6 @@ class CsvFileImporterController < ApplicationController
     if issues.size > 1
       @failed_count += 1
       @failed_issues[@failed_count] = row_data
-      #flash_message(:warning, "Unique field #{unique_attr} with value '#{attr_value}' in issue #{@failed_count} has duplicate record")
       flash_message(:warning, "Unique field #{unique_attr}#{unique_attr == @unique_attr ? '': '('+@unique_attr+')'} with value '#{attr_value}' has duplicate record")
       raise MultipleIssuesForUniqueValue, "Unique field #{unique_attr} with value '#{attr_value}' has duplicate record"
     else
@@ -206,7 +199,7 @@ class CsvFileImporterController < ApplicationController
     @affect_projects_issues = Hash.new
     
     # Retrieve saved import data
-	iip = CsvFileImportInProgress.find_or_create_by(user_id: User.current.id) # (pour RAILS=4)
+	iip = CsvFileImportInProgress.find_or_create_by(user_id: User.current.id)
     if iip == nil
       flash[:error] = "No import is currently in progress"
       return
@@ -225,7 +218,7 @@ class CsvFileImporterController < ApplicationController
 			  iip.csv_data = latin[:data]
 			  iip.encoding = latin[:encoding]
 	  end
-	 logger.info "Encodage OK"
+	 logger.info "Encoding OK"
 	result_errors = []
 
 	# Import
@@ -233,12 +226,12 @@ class CsvFileImporterController < ApplicationController
 		when 'issue'
 			result_errors = import_issues(iip.csv_data, true, iip.encoding, iip.quote_char, iip.col_sep, params)
 			render_template = 'issue'
-			logger.info "Importation des demandes en cours..."
+			logger.info "Issues import in progress..."
 			
 		when 'time_entry'
 			result_errors = import_time_entries(iip.csv_data, true, iip.encoding, iip.quote_char, iip.col_sep, params)
 			render_template = 'time_entry'
-			logger.info "Importation des temps passés en cours..."
+			logger.info "iTime entries import in progress..."
     end
 	logger.info "Import OK"
 
@@ -284,12 +277,10 @@ private
 			csv_data_lat=pdata.force_encoding("utf-8")
 		when 'L1'
 			csv_data_lat = Iconv.conv("UTF-8", "ISO8859-1", pdata)
-			#csv_data_lat=pdata.encode("iso-8859-1").force_encoding("utf-8")
 			convert = true
 
 		when 'L9'
 			csv_data_lat = Iconv.conv("UTF-8", "ISO8859-15", pdata)
-			#csv_data_lat=pdata.encode("iso-8859-15").force_encoding("utf-8")
 			convert = true
 	end
 	
@@ -461,7 +452,8 @@ private
 
             next
           end
-			logger.info "Attributs facultatifs"
+
+			logger.info "Optional attributes"
 
 	      # optional attributes
 	      issue.description = row[attrs_map["description"]] || issue.description
@@ -473,8 +465,6 @@ private
 	      issue.done_ratio = row[attrs_map["done_ratio"]] || issue.done_ratio
 	      issue.estimated_hours = row[attrs_map["estimated_hours"]] || issue.estimated_hours
 
-		  			
-					
 			logger.info "Custom_fields"
 
 	      # custom fields
@@ -484,7 +474,8 @@ private
 	        end
 	        h
 	      end
-  			logger.info "Sauvegarde !"
+
+  			logger.info "Save !"
 
   		  begin
 	        issue.save!
@@ -524,10 +515,11 @@ private
     # attrs_map is fields_map's invert
     attrs_map = fields_map.invert
 
- 	# check params
+	# check params
  	errors = []
 
-	if attrs_map["issue_id"].nil? && attrs_map[@settings['csv_import_issue_id']].nil?
+    custom_field = CustomField.find_by_id(@settings['csv_import_issue_id'])
+   	if attrs_map["issue_id"].nil? && attrs_map[custom_field.name].nil?
 		errors << l(:error_issue_field_not_defined )
 		errors << "<br>"
 	end
@@ -560,7 +552,7 @@ private
     logger.info "Errors ##{errors.size}"
     if errors.size > 0 
     	logger.info "Errors : " + errors.to_s
-    	flash[:error] = errors
+    	flash[:error] = errors.join(" ")
     	return errors
     end
 
@@ -569,10 +561,9 @@ private
     #   return
     # end
 
-	    
 	ActiveRecord::Base.transaction do
-		  CSV.new(csv_data, {:headers=>header, :encoding=>encoding, 
-        :quote_char=>quote_char, :col_sep=>col_sep}).each do |row|
+		CSV.new(csv_data, {:headers=>header, :encoding=>encoding, 
+        	:quote_char=>quote_char, :col_sep=>col_sep}).each do |row|
 		
 		  journal = nil
 		  
@@ -580,7 +571,7 @@ private
 		  logger.info "Row processed :  #{row}"
 
 		  # Check that mandatory fields are not empty 
-	      if (row[attrs_map["issue_id"]].blank? && row[attrs_map[@settings['csv_import_issue_id']]].blank?) ||
+	      if (row[attrs_map["issue_id"]].blank? && row[attrs_map[custom_field.name]].blank?) ||
 	          row[attrs_map["hours"]].blank? ||
 	          row[attrs_map["activity_id"]].blank? ||
 	          row[attrs_map["user_id"]].blank? ||
@@ -605,10 +596,9 @@ private
 			  begin
 			  if row[attrs_map["issue_id"]].nil?
 		        # find issue from custom field
-		        custom_field = CustomField.find_by_name(@settings['csv_import_issue_id'])
-		        custom_field_value = CustomValue.find(:first, :conditions => ["custom_field_id = ? and value = ?",  
-			        custom_field.id,row[attrs_map[@settings['csv_import_issue_id']]]])
-
+		        custom_field = CustomField.find_by_id(@settings['csv_import_issue_id'])
+		        custom_field_value = CustomValue.where(:custom_field_id => custom_field.id, 
+					:value => row[attrs_map[custom_field.name]]).first
 				issue_id = Issue.find_by_id(custom_field_value.customized_id)
 				issue_id = issue_id.id
 			  else

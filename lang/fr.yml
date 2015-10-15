@@ -1,4 +1,3 @@
-
 label_import: "Importer"
 label_issue_importer: "Import de demandes"
 label_upload_notice: "Selctionnez un fichier CSV à importer. Le fichier doit avoir une ligne d'entête. Taille maxi. 4MB."

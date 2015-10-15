@@ -4,7 +4,7 @@ fr:
   label_time_entry: "Temps passé"
   label_issue_importer: "Import de demandes"
   label_time_entry_importer: "Import de temps passé"
-  label_upload_import_type: "Type d'import:"
+  label_upload_import_type: "Type d'import :"
   label_upload_notice: "Selctionnez un fichier CSV à importer. Le fichier doit avoir une ligne d'entête. Taille maxi. 4MB."
   label_upload_format: "Configuration du format de fichier"
   label_upload_encoding: "Encodage :"
