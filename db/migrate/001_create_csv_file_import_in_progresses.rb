@@ -1,4 +1,4 @@
-class CreateCsvFileImportInProgress < ActiveRecord::Migration
+class CreateCsvFileImportInProgresses < ActiveRecord::Migration
   def self.up
     create_table :csv_file_import_in_progresses do |t|
       t.column :user_id, :integer, :null => false
