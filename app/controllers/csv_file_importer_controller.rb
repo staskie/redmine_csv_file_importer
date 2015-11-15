@@ -125,7 +125,7 @@ class CsvFileImporterController < ApplicationController
     IssueRelation::TYPES.each_pair do |rtype, rinfo|
       @attrs.push([l_or_humanize(rinfo[:name]),rtype])
     end
-    @attrs.sort!
+    @attrs.sort! { |a, b| a[0] <=> b[0] }
 
     logger.info "Render : match_#{render_template}"
     render(:template => "csv_file_importer/match_" + render_template)
