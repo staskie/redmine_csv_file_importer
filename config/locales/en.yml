@@ -44,3 +44,14 @@ en:
   text_rmi_specify_unique_field_for_column: "Unique field must be specified because the column %{column} needs to refer to other tasks" 
 
   error_time_entry_not_saved: 'Time entry not saved'
+  error_subject_field_not_defined: "Subjet field not defined"
+  error_issue_field_not_defined: "Issue field not defined"
+  error_user_field_not_defined: "User field not defined"
+  error_spent_on_field_not_defined: "Spent on field not defined"
+  error_activity_field_not_defined: "Activity field not defined"
+  error_hours_field_not_defined: "Hours field not defined"
+  error_mandatory_field_missing: "Mandatory field missing"
+  error_issue_id_not_existing: "Issue id not existing"
+  error_issue_not_saved: "Issue not saved"
+  error_duplicate_unique_field: "Duplicate unique field"
+
