@@ -467,6 +467,7 @@ class CsvFileImporterController < ApplicationController
         issue.fixed_version_id = fixed_version != nil ? fixed_version.id : issue.fixed_version_id
         issue.done_ratio = row[attrs_map["done_ratio"]] || issue.done_ratio
         issue.estimated_hours = row[attrs_map["estimated_hours"]] || issue.estimated_hours
+        issue.parent_id = row[attrs_map["parent_issue"]] || issue.parent_issue
 
         logger.info "Custom_fields"
 
